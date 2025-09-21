@@ -7,7 +7,13 @@ const UserSchema = new mongoose.Schema({
     lastSeen: {
         type: Date,
         default: Date.now
-    }});
+    },
+    isOnline: {
+        type:Boolean,
+        default: false
+    }
+});
+    
 
     //runs before the user saves in the database
     //if password is modified it will be decrypt
