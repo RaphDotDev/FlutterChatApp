@@ -8,7 +8,6 @@ import { getRoomId } from './utils/chatHelper.js';
 import { getUndeliveredMessages, getUserLastSeen, markMessageAsDelivered, updateMessageStatus, updateUserLastSeen } from './services/chatServices.js';
 import User from './models/user.js';
 import message from './models/message.js';
-import user from './models/user.js';
 
 //connect to DB
 connectDB();
