@@ -260,7 +260,7 @@ export const chatRoom = async(userId) => {
       _id: 0,
       chatType: "private",
       messageId: "$latestMessageId",
-      username: "$userDetails.username",
+      userName: "$userDetails.userName",
       userId: "$userDetails._id",
       latestMessageTime: 1,
       latestMessage: 1,
