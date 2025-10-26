@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
             clearTimeout(typingTimeouts.get(key));
         }
 
-        socket.io(roomId).emit('typing_indicator', {
+        socket.to(roomId).emit('typing_indicator', {
             userId,
             isTyping: true,
         });
@@ -178,7 +178,7 @@ io.on('connection', (socket) => {
             typingTimeouts.delete(key);
         }
 
-        socket.io(roomId).emit('typing_indicator', {
+        socket.to(roomId).emit('typing_indicator', {
             userId,
             isTyping: false,
         });
