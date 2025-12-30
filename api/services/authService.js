@@ -23,7 +23,7 @@ export const register = async (userName, password) => {
 
 export const login = async (userName, password) => {
     try {
-
+    console.log('Login attempt for user:', userName);
     const user = await User.findOne({userName});
    
     if(!user) {
