@@ -1,19 +1,26 @@
-import  jwt  from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 const authMiddleware = (req, res, next) => {
-
-    try{
-        const token = req.headers.authorization.split(" ")[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        req.userId = decoded.userId;
-        next();        
-
-
-    }catch(error) {
-        return res.status(401).json({message: "Authentication Failed"});
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ message: "Authentication Failed: No token provided" });
     }
 
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ message: "Authentication Failed: Malformed token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Authentication Failed: Invalid or expired token" });
+  }
 };
 
-export default authMiddleware; 
+export default authMiddleware;

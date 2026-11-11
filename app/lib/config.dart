@@ -1,3 +1,3 @@
 class Config {
-  static const String API_URL = "http://192.168.159.1:3000";
+  static const String API_URL = "http://localhost:3000";
 }

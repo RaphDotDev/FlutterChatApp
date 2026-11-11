@@ -5,7 +5,15 @@ import routerUser from './routes/userRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import {Server} from 'socket.io';
 import { getRoomId } from './utils/chatHelper.js';
-import { getUndeliveredMessages, getUserLastSeen, markMessageAsDelivered, updateMessageStatus, updateUserLastSeen } from './services/chatServices.js';
+import {
+    createMessage,
+    getUndeliveredMessages,
+    getUserLastSeen,
+    markMessageAsDelivered,
+    markMessageAsRead,
+    updateMessageStatus,
+    updateUserLastSeen
+} from './services/chatServices.js';
 import User from './models/user.js';
 import message from './models/message.js';
 
@@ -36,7 +44,7 @@ io.on('connection', (socket) => {
 
         console.log(`User ${userId} registered with socket ${socket.id}`);
 
-        checkPendingMessages();
+        checkPendingMessages(userId);
     });
 
     //Join Room when user is online
@@ -119,17 +127,16 @@ io.on('connection', (socket) => {
         }
         io.to(roomId).emit('new_message', message);
 
-        //User is online but not in the room (notification)
         if(onlineUsers.has(message.receiver)) {
             const receiverSocketId = onlineUsers.get(message.receiver);
             const receiverSocket = io.sockets.sockets.get(receiverSocketId);
 
             if (receiverSocket && !receiverSocket.rooms.has(roomId)){
-                const sender = await User.findbyId(message.sender).select('userName');
+                const sender = await User.findById(message.sender).select('userName');
 
                 receiverSocket.emit('new_message_notification', {
                     senderId: message.sender,
-                    senderName: sender.userName,
+                    senderName: sender ? sender.userName : 'Someone',
                     messageId: message.messageId,
                     message: message.message
                 });
@@ -140,7 +147,7 @@ io.on('connection', (socket) => {
     const typingTimeouts = new Map();
 
     //User starts typing
-    socket.on('typing_start', (userId, receiverId) => {
+    socket.on('typing_start', ({userId, receiverId}) => {
         if(!userId || !receiverId) return;
 
         const roomId = getRoomId(userId, receiverId);
@@ -157,7 +164,7 @@ io.on('connection', (socket) => {
 
         const timeOut = setTimeout(() => {
             socket.to(roomId).emit('typing_indicator', {
-                userId, 
+                userId,
                 isTyping: false
             });
             typingTimeouts.delete(key);
@@ -167,7 +174,7 @@ io.on('connection', (socket) => {
     });
 
     //User end typing
-    socket.on('typing_end', (userId, receiverId) => {
+    socket.on('typing_end', ({userId, receiverId}) => {
         if(!userId || !receiverId) return;
 
         const roomId = getRoomId(userId, receiverId);
@@ -205,7 +212,7 @@ io.on('connection', (socket) => {
     });
 
     //Message read
-     socket.on('message_read', async({messageIds, senderId, receiverId}) => {
+     socket.on('messages_read', async({messageIds, senderId, receiverId}) => {
         try{
 
             for(const messageId of messageIds){
@@ -228,28 +235,27 @@ io.on('connection', (socket) => {
     });
 
     //Mark Message read
-    socket.on('mark_message_read', async({userId, partnerId}) => {
+    socket.on('mark_messages_read', async({userId, partnerId}) => {
         try{
-
-            var count = await markMessageAsRead(userId,partnerId);
+            const roomId = getRoomId(userId, partnerId);
+            const count = await markMessageAsRead(userId, partnerId);
 
             if(count > 0) {
-                 const roomId = getRoomId(senderId, receiverId);
                  io.to(roomId).emit('messages_all_read', {
                     reader: userId,
                     sender: partnerId
                  }); 
             }
-            
+
             if(onlineUsers.has(partnerId)) {
                 const senderSocketId = onlineUsers.get(partnerId);
                 const senderSocket = io.sockets.sockets.get(senderSocketId);
 
                 if(senderSocket && !senderSocket.rooms.has(roomId)){
-                    senderSocket.emit('message_all_read', {
+                    senderSocket.emit('messages_all_read', {
                         reader: userId,
-                        sender:partnerId
-                    })
+                        sender: partnerId
+                    });
                 }
             }
 
@@ -323,15 +329,14 @@ const checkPendingMessages = async(userId) => {
             if(userSocket) {
                 Object.keys(messageBySender).forEach((senderId) => {
                     const count = messageBySender[senderId].length;
-                    const senderName= messageBySender[senderId][0].sender.userName;
+                    const senderName = messageBySender[senderId][0].sender.userName;
 
                     userSocket.emit('pending_messages', {
                         senderId,
                         senderName,
                         count,
-                        latestMessage: messageBySender['senderId'][0].message
-                    })
-
+                        latestMessage: messageBySender[senderId][0].message
+                    });
                 });
             }
         }

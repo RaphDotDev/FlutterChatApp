@@ -1,3 +1,4 @@
+import 'package:app/pages/direct_messages_page.dart';
 import 'package:app/pages/landing_page.dart';
 import 'package:app/pages/login_page.dart';
 import 'package:app/pages/register_page.dart';
@@ -87,11 +88,17 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
       initialRoute: '/',
       debugShowCheckedModeBanner: false,
       routes: {
-        '/': (context) => InitializerWidget(),
-         '/landing': (context) => const LandingScreen(),
-          '/login': (context) => const LoginScreen(),
-           '/register': (context) => RegisterScreen(),
-            '/directMessages': (context) => InitializerWidget(),
+        '/': (context) => const InitializerWidget(),
+        '/landing': (context) => const LandingScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
+        '/directMessages': (context) => const DirectMessagesPage(),
+      },
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 0.8), 
+          child: child!
+          );
       },
     );
   }
@@ -113,14 +120,11 @@ void initState(){
   _checkLogin();
 }
 
-Future<void> _checkLogin() async{
+Future<void> _checkLogin() async {
   final isLoggedIn = await AuthService.isLoggedIn();
-  if(isLoggedIn == true){
-    initialRoute = '/directMessages';
-  }else{
-    initialRoute = '/landing';
-  }
+  initialRoute = isLoggedIn == true ? '/directMessages' : '/landing';
 
+  if (!mounted) return;
   Navigator.of(context).pushReplacementNamed(initialRoute!);
 }
 
